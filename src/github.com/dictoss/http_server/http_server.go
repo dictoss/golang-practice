@@ -13,12 +13,12 @@ func main() {
     const c_write_timeout_sec = 10 * time.Second
     const c_max_header_bytes = 1 << 20 // 1MB
 
-    var m = http.NewServeMux()
+    m := http.NewServeMux()
 
     m.Handle("/hello", http.HandlerFunc(handler_hello))
     m.Handle("/rest/hello", http.HandlerFunc(handler_rest_hello))
 
-    var s = http.Server{
+    s := http.Server{
         Addr: ":8090",
         Handler: m,
         ReadTimeout:    c_read_timeout_sec,
