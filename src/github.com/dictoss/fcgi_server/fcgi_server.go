@@ -98,6 +98,8 @@ func handler_json_hello2(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+    log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
     l, err := net.Listen("tcp", "127.0.0.1:9000")
 
     if err != nil {
