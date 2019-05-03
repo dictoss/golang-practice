@@ -2,6 +2,8 @@
 package main
 
 import (
+    "flag"
+    "errors"
     "log"
     "fmt"
     "net"
@@ -13,6 +15,12 @@ import (
 //
 // struct
 //
+
+type GlobalConfig struct {
+    logpath string
+    fcgi_listen_addr string
+    fcgi_url_prefix string
+}
 
 // require StructTag UpperCase in Member.
 type ResponseHelloMessage struct {
@@ -27,8 +35,12 @@ type ResponseHello2Message struct {
     ReqMsg string `json:"req_msg"`
     ResMsg string `json:"res_msg"`
 }
-        
 
+// global var
+var g_conf GlobalConfig
+
+
+// function
 func handler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "root fcgi with golang !!")
 }
@@ -97,18 +109,43 @@ func handler_json_hello2(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func main() {
+func init_prog() error {
+     flag.StringVar(&g_conf.logpath, "logpath", "", "log output path. If you set to empty string, output log to stdout.")
+     flag.StringVar(&g_conf.fcgi_listen_addr, "fcgi_listen_addr", "127.0.0.1:9000" , "fast cgi listen address and port. Default 127.0.0.0:9000 .")
+     flag.StringVar(&g_conf.fcgi_url_prefix, "fcgi_url_prefix", "/gofcgi", "fast cgi prefix url path. Default /gofcgi .")
+
+    // set log
     log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
-    l, err := net.Listen("tcp", "127.0.0.1:9000")
+    // valdate execute parameter
+    if true {
+        log.Println("[g_conf.logpath]", g_conf.logpath)
+        log.Println("[g_conf.fcgi_listen_addr]", g_conf.fcgi_listen_addr)
+        log.Println("[g_conf.fcgi_url_prefix]", g_conf.fcgi_url_prefix)
 
+        return nil
+    } else {
+        return errors.New("invalid paramer.")
+    }
+}
+
+func main() {
+    err := init_prog()
+    if err != nil {
+        log.Fatalln(err)
+        return
+    } else {
+        log.Println("load config.")
+    }
+
+    l, err := net.Listen("tcp", g_conf.fcgi_listen_addr)
     if err != nil {
         return
     }
 
     m := http.NewServeMux()
  
-    fcgi_proxy_prefix := "/gofcgi"
+    fcgi_proxy_prefix := g_conf.fcgi_url_prefix
     
     m.Handle(fcgi_proxy_prefix + "/hello/", http.HandlerFunc(handler_hello))
     m.Handle(fcgi_proxy_prefix + "/json/hello/", http.HandlerFunc(handler_json_hello))
