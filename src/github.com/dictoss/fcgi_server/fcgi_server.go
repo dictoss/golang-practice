@@ -2,6 +2,7 @@
 package main
 
 import (
+    "os"
     "flag"
     "errors"
     "log"
@@ -38,6 +39,7 @@ type ResponseHello2Message struct {
 
 // global var
 var g_conf GlobalConfig
+var g_log *log.Logger
 
 
 // function
@@ -46,10 +48,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func handler_hello(w http.ResponseWriter, r *http.Request) {
+    g_log.Println("IN handler_hello")
+
     fmt.Fprintf(w, "Hello fcgi with golang !!")
 }
 
 func handler_json_hello(w http.ResponseWriter, r *http.Request) {
+    g_log.Println("IN handler_json_hello")
+
     res_rrm := ResponseHelloMessage{
         Message: "Hello fcgi with golang !!"}
 
@@ -67,8 +73,8 @@ func handler_json_hello2(w http.ResponseWriter, r *http.Request) {
         ReqMsg: "",
         ResMsg: ""}
 
-    log.Println("----------")
-    log.Println(r.Method, ",", r.UserAgent())
+    g_log.Println("----------")
+    g_log.Println(r.Method, ",", r.UserAgent())
 
     if r.Method == "POST" {
         req_rrm := new(RequestHello2Message)
@@ -88,7 +94,7 @@ func handler_json_hello2(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    log.Println(res_rrm)
+    g_log.Println(res_rrm)
         
     res_json_str, err := json.Marshal(&res_rrm)
     if err != nil {
@@ -100,30 +106,38 @@ func handler_json_hello2(w http.ResponseWriter, r *http.Request) {
         res_len := len(res_json_str)
         w.Header().Set("Content-Length", fmt.Sprint(res_len))
 
-        //log.Println(w.Header())
+        //g_log.Println(w.Header())
 
         w.WriteHeader(http.StatusOK)
         w.Write(res_json_str)
         
-        log.Println("==========")
+        g_log.Println("==========")
     }
 }
 
 func init_prog() error {
-     flag.StringVar(&g_conf.logpath, "logpath", "", "log output path. If you set to empty string, output log to stdout.")
-     flag.StringVar(&g_conf.fcgi_listen_addr, "fcgi_listen_addr", "127.0.0.1:9000" , "fast cgi listen address and port. Default 127.0.0.0:9000 .")
-     flag.StringVar(&g_conf.fcgi_url_prefix, "fcgi_url_prefix", "/gofcgi", "fast cgi prefix url path. Default /gofcgi .")
+    flag.StringVar(&g_conf.logpath, "logpath", "", "log output path. If you set to empty string, output log to stdout.")
+    flag.StringVar(&g_conf.fcgi_listen_addr, "fcgi_listen_addr", "127.0.0.1:9000" , "fast cgi listen address and port. Default 127.0.0.0:9000 .")
+    flag.StringVar(&g_conf.fcgi_url_prefix, "fcgi_url_prefix", "/gofcgi", "fast cgi prefix url path. Default /gofcgi .")
 
-     flag.Parse()
-
-    // set log
-    log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+    flag.Parse()
 
     // valdate execute parameter
     if true {
-        log.Println("[g_conf.logpath]", g_conf.logpath)
-        log.Println("[g_conf.fcgi_listen_addr]", g_conf.fcgi_listen_addr)
-        log.Println("[g_conf.fcgi_url_prefix]", g_conf.fcgi_url_prefix)
+        if "" == g_conf.logpath {
+            g_log = log.New(os.Stderr, "", log.LstdFlags | log.Lmicroseconds)
+        } else {
+            logfd, err := os.OpenFile(g_conf.logpath, os.O_APPEND | os.O_CREATE | os.O_RDWR, 0666)
+            if err != nil {
+                return errors.New("fail open logfile (dst={}). check path or permission.")
+            }
+
+            g_log = log.New(logfd, "", log.LstdFlags | log.Lmicroseconds)
+        }
+
+        g_log.Println("[g_conf.logpath]", g_conf.logpath)
+        g_log.Println("[g_conf.fcgi_listen_addr]", g_conf.fcgi_listen_addr)
+        g_log.Println("[g_conf.fcgi_url_prefix]", g_conf.fcgi_url_prefix)
 
         return nil
     } else {
@@ -137,7 +151,7 @@ func main() {
         log.Fatalln(err)
         return
     } else {
-        log.Println("load config.")
+        g_log.Println("load config.")
     }
 
     l, err := net.Listen("tcp", g_conf.fcgi_listen_addr)
