@@ -114,6 +114,8 @@ func init_prog() error {
      flag.StringVar(&g_conf.fcgi_listen_addr, "fcgi_listen_addr", "127.0.0.1:9000" , "fast cgi listen address and port. Default 127.0.0.0:9000 .")
      flag.StringVar(&g_conf.fcgi_url_prefix, "fcgi_url_prefix", "/gofcgi", "fast cgi prefix url path. Default /gofcgi .")
 
+     flag.Parse()
+
     // set log
     log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
