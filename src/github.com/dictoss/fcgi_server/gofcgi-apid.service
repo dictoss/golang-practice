@@ -1,0 +1,13 @@
+[Unit]
+Description=REST API server for golang
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/gofcgi-apid/fcgi_server -logpath "/usr/local/gofcgi-apid/log.txt" -fcgi_listen_addr "127.0.0.1:9000" -fcgi_url_prefix "/gofcgi"
+ExecStop=/bin/kill -HUP $MAINPID
+TimeoutStopSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
